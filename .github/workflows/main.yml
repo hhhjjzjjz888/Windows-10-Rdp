@@ -1,0 +1,48 @@
+name: Windows 10 RDP Tailscale Setup
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  windows-rdp-tailscale:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Tailscale
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri https://pkgs.tailscale.com/stable/tailscale-ipn-setup.exe -OutFile tailscale.exe
+          Start-Process ".\tailscale.exe" -ArgumentList "/quiet" -Wait
+
+      - name: Authenticate Tailscale
+        shell: powershell
+        env:
+          TS_KEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+        run: |
+          & "C:\Program Files\Tailscale\tailscale.exe" up `
+            --authkey "$env:TS_KEY" `
+            --hostname "windows10-rdp" `
+            --accept-routes `
+            --accept-dns
+
+      - name: Verify Tailscale connection
+        shell: powershell
+        run: |
+          & "C:\Program Files\Tailscale\tailscale.exe" status
+
+      - name: Show Example RDP Settings (Demo Only)
+        run: |
+          echo "----------------------------------------"
+          echo "           RDP SETTINGS (DEMO)"
+          echo "----------------------------------------"
+          echo "Address:   <Your Tailscale IP>"
+          echo "Username:  <Your Windows user>"
+          echo "Password:  <Your password>"
+          echo "----------------------------------------"
+          echo "NOTE: GitHub runners cannot expose RDP."
+          echo "Use these settings only on YOUR OWN device."
